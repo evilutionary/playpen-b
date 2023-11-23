@@ -1,6 +1,13 @@
 require 'benchmark'
 require 'pry'
 
+require "./testplan.rb"
+
+def debug_results(r)
+    #puts "  -- intersections: #{r.length}"
+    r
+end
+
 def generate_random_array(length)
   min_value = 1
   exp_length = 2 ** length
@@ -18,12 +25,12 @@ end
 
 def find_matches_ampersand(nums1, nums2, nums3)
   result = nums1 & nums2 & nums3
-  # p result.length
+  debug_results(result)
 end
 
 def find_matches_intersect(nums1, nums2, nums3)
   result = nums1.intersection(nums2, nums3)
-  # p result.length
+  debug_results(result)
 end
 
 def find_matches_include(nums1, nums2, nums3)
@@ -31,7 +38,7 @@ def find_matches_include(nums1, nums2, nums3)
   nums1.each do |num|
     result << num if nums2.include?(num) && nums3.include?(num)
   end
-  # p result.length
+  debug_results(result)
 end
 
 def find_matches_kiss(nums1, nums2, nums3)
@@ -55,7 +62,7 @@ def find_matches_kiss(nums1, nums2, nums3)
     end
   end
 
-  # p result.length
+  debug_results(result)
 end
 
 def find_matches_kiss_plus(nums1, nums2, nums3)
@@ -88,59 +95,73 @@ def find_matches_kiss_plus(nums1, nums2, nums3)
     end
   end
 
-  # p result.length
+  debug_results(result)
 end
 
-def find_matches_set2(nums1, nums2, nums3)
-  result = nums1 & nums2 & nums3
-  # p result.length
-end
-
-def find_matches_sets(nums1, nums2, nums3)
+def find_matches_intersect_b(nums1, nums2, nums3)
   result = nums1.intersection(nums2).intersection(nums3) # this is the same intersection as above
-  # p result.length
+  debug_results(result)
 end
 
 def find_matches_hash(nums1, nums2, nums3)
   freq_hash = {}
   nums1.each { |num| freq_hash[num] = freq_hash[num].to_i + 1 }
   result = nums2.select { |num| freq_hash[num] && freq_hash[num] > 0 } & nums3
-  # p result.length
+  debug_results(result)
 end
 
 def find_matches_reduce(nums1, nums2, nums3)
   result = [nums1, nums2, nums3].reduce(:&)
-  # p result.length
+  debug_results(result)
 end
 
 # def your_matches_method(nums1, nums2, nums3)
 #   your code here
-# p result
+#   debug_results(result)
 # end
 
-def benchmark_find_methods(length)
-  a = generate_random_array(length)
-  b = generate_random_array(length)
-  # you can swap between modified and unmodified versions for different intersection sizes
-  # using gen_max_array(length) will give you minimum intersection size
-  # c = generate_random_array(length)
-  c = gen_max_array(length)
+def plan_okay(plan)
+  nway = plan[:arrays].length
+  if nway < 3
+    puts "too few arrays, skipping for now since methods require 3"
+    false
+  elsif nway > 3
+    puts "too many arrays (#{nway}), skipping..." #could truncate to 3...
+    #ary = plan[:arrays][0..2]
+    false
+  else
+    true
+  end
+end
 
-  d, e, f = a.to_set, b.to_set, c.to_set
+def benchmark_find_methods(plan)
+  testplan_print1(plan)
+  ary = plan[:arrays]
+  #arysort = ary.map{|a| a.sort}
+  sset = ary.map{|a| a.to_set}
 
-  Benchmark.bm(25) do |x|
-    x.report("find_matches_intersect:") { find_matches_intersect(a, b, c) }
-    x.report("find_matches_reduce:") { find_matches_reduce(a, b, c) }
-    x.report("find_matches_ampersand:") { find_matches_ampersand(a, b, c) }
-    x.report("find_matches_kiss_plus:") { find_matches_kiss_plus(a, b, c) }
-    x.report("find_matches_kiss:") { find_matches_kiss(a, b, c) }
-    x.report("find_matches_sets:") { find_matches_sets(d, e, f) }
-    x.report("find_matches_set2:") { find_matches_set2(d, e, f) }
-    x.report("find_matches_hash:") { find_matches_hash(a, b, c) }
+  Benchmark.bm(32) do |x|
+    r = []
+    x.report("find_matches_intersect:") { r << find_matches_intersect(*ary) }
+    x.report("find_matches_intersect_b:") { r << find_matches_intersect_b(*ary) }
+    x.report("find_matches_reduce:") { r << find_matches_reduce(*ary) }
+    x.report("find_matches_ampersand:") { r << find_matches_ampersand(*ary) }
+    x.report("find_matches_kiss_plus:") { arysort = ary.map{|a| a.sort}; r << find_matches_kiss_plus(*arysort) }
+    x.report("find_matches_kiss:") { arysort = ary.map{|a| a.sort}; r << find_matches_kiss(*arysort) }
+    x.report("find_matches_intersect_b [sets]:") { r << find_matches_intersect_b(*sset) }
+    x.report("find_matches_ampersand [sets]:") { r << find_matches_ampersand(*sset) }
+    x.report("find_matches_hash:") { r << find_matches_hash(*ary) }
     # x.report("find_matches_include:") { find_matches_include(a, b, c) }
     # 100x slower than others, redeuce length limit to 15
     # x.report("your_find_matches_label:") { your_find_matches(a, b, c) }
+    lengths = r.map{|a| a.length}
+    mm = lengths.minmax
+    if mm.first != mm.last
+      puts "Intersection lengths don't match; enable printing lengths in debug_results to find out which one"
+    end
   end
+
+  puts
 end
 
 # nums_1 = [1, 2, 4, 5, 8]
@@ -160,8 +181,17 @@ end
 # find_matches_reduce(nums_1, nums_2, nums_3)
 # add your method here and uncomment to test method functionality
 
-(10..20).each do |length|
-  puts "Benchmark for array length 2^#{length}:"
-  benchmark_find_methods(length)
-  puts "\n"
+if ARGV.length == 0
+  ARGV.push("testplan.yaml")
 end
+
+ARGV.each do |f|
+  if File.exist?(f)
+    planlist = testplan_read(f)
+
+    planlist.filter{|p| plan_okay(p)}.each do |plan|
+      benchmark_find_methods(plan)
+    end
+  end
+end
+

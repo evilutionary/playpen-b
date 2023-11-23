@@ -1,0 +1,88 @@
+---
+-
+  name: 1M normal # x3
+  arrays:
+    - &1M-norm
+      min: 1
+      elements: 1000000
+    - *1M-norm
+    - *1M-norm
+
+-
+  name: 1M sparse # x3
+  arrays:
+    - &1M-norm-sparse
+      min: 1
+      max: 50000000
+      elements: 1000000
+    - *1M-norm-sparse
+    - *1M-norm-sparse
+
+-
+  name: 1M dense # x3
+  arrays:
+    - &1M-norm-dense
+      min: 1
+      max: 2000000
+      elements: 1000000
+    - *1M-norm-dense
+    - *1M-norm-dense
+
+-
+  name: 1M normal and dense top # x3
+  arrays:
+    - *1M-norm
+    - *1M-norm
+    - &1M-norm-high-1_5M
+      min: 8500000
+      max: 10000000  # restriction avoids 19M max
+      elements: 1000000
+
+-
+  name: exp 3-low 100k-500k
+  arrays:
+    - &exp-low-100k-500k
+      min: 1
+      max: 500000 # 6-sigma
+      elements: 100000
+      type: exp-lower
+    - *exp-low-100k-500k
+    - *exp-low-100k-500k
+
+-
+  name: exp 2-low 1-high 300k-1M
+  arrays: 
+    - &exp-low-300k-1M
+      min: 1
+      max: 1000000 # 6-sigma
+      elements: 300000
+      type: exp-lower # normal lower-weighted exp
+    - *exp-low-300k-1M
+    - &exp-high-300k-1M
+      min: 1
+      max: 1000000 # 6-sigma
+      elements: 300000
+      type: exp-upper # reverse upper-weighted exp, floor=min enforced
+
+-
+  name: exp 3-high 300k-1M
+  arrays:
+    - *exp-high-300k-1M
+    - *exp-high-300k-1M
+    - *exp-high-300k-1M
+
+-
+  name: exp 2-low 1-high 1k-10k
+  arrays:
+    - &exp-low-1k-10k
+      min: 1
+      max: 10000
+      elements: 1000
+      type: exp-lower
+    - *exp-low-1k-10k
+    - &exp-high-1k-10k
+      min: 1
+      max: 10000
+      elements: 1000
+      type: exp-upper
+
